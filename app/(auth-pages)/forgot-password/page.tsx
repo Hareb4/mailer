@@ -8,40 +8,34 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
+import { Loading } from "@/components/custome/loading";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const forgotPasswordhandler = async (e: React.FormEvent) => {
-    // toast({
-    //   title: "Email is sending",
-    //   description: "Please check your email for further instructions",
-    // });
-
-    toast({
-      title: "Email sent",
-      description: "Please check your email for url to reset password",
-      variant: "success",
-    });
-
+  const forgotPasswordHandler = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent default form submission
     setError("");
-
-    // Debugging: Log the current values of email and password
-    console.log("Email:", email);
+    setIsLoading(true); // Set loading to true
 
     if (!email) {
       alert("Please fill all mandatory parameters");
+      setIsLoading(false); // Reset loading on error
       return;
     }
 
     try {
       const response = await forgotPasswordAction(email);
-      console.log("Response: ", response);
 
       if (response.status === 200) {
+        toast({
+          title: "Email sent",
+          description: "Please check your email for the URL to reset password",
+          variant: "success",
+        });
         setEmail("");
         setError("");
       }
@@ -52,6 +46,8 @@ export default function ForgotPassword() {
       } else {
         console.log("An unexpected error occurred:", error);
       }
+    } finally {
+      setIsLoading(false); // Reset loading after the try/catch
     }
   };
 
@@ -59,7 +55,7 @@ export default function ForgotPassword() {
     <>
       <form
         className="flex-1 flex flex-col w-full gap-2 text-foreground [&>input]:mb-6 min-w-64 max-w-64 mx-auto"
-        onSubmit={forgotPasswordhandler}
+        onSubmit={forgotPasswordHandler}
       >
         <div>
           <h1 className="text-2xl font-medium">Reset Password</h1>
@@ -80,10 +76,11 @@ export default function ForgotPassword() {
             onChange={(e) => setEmail(e.target.value)}
           />
           <p className="text-red-500">{error}</p>
-          <Button type="submit">Reset Password</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? <Loading text="Sending..." /> : "Reset Password"}
+          </Button>
         </div>
       </form>
-      {/* <SmtpMessage /> */}
     </>
   );
 }

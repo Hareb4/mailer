@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 const CommunityPage = () => {
-  const [communities] = useState([
+  const [communities, setCommunities] = useState([
     {
       name: "Waves Community",
       emails: Array.from({ length: 300 }, (_, i) => `user${i + 1}@dev.com`),
@@ -32,16 +32,18 @@ const CommunityPage = () => {
     communities.map(() => false)
   );
 
-  const handleFileUpload = (event, communityIndex) => {
+  const handleFileUpload = (event: any, communityIndex: any) => {
     const file = event.target.files[0];
     const reader = new FileReader();
-    reader.onload = (e) => {
+    console.log("is file", file);
+
+    reader.onload = (e: any) => {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: "array" });
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
       const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-      const emails = rows.slice(1).map((row) => row[0]);
+      const emails = rows.slice(1).map((row: any) => row[0]);
       updateCommunityEmails(communityIndex, emails);
       // Reset expansion when new file is uploaded
       setExpandedCommunities((prev) => {
@@ -53,7 +55,7 @@ const CommunityPage = () => {
     reader.readAsArrayBuffer(file);
   };
 
-  const updateCommunityEmails = (index, emails) => {
+  const updateCommunityEmails = (index: any, emails: any) => {
     setCommunities((prevCommunities) => {
       const updatedCommunities = [...prevCommunities];
       updatedCommunities[index].emails = emails;
@@ -61,7 +63,7 @@ const CommunityPage = () => {
     });
   };
 
-  const toggleCommunityExpansion = (index) => {
+  const toggleCommunityExpansion = (index: any) => {
     setExpandedCommunities((prev) => {
       const newExpanded = [...prev];
       newExpanded[index] = !newExpanded[index];
@@ -98,7 +100,7 @@ const CommunityPage = () => {
                 <div className="flex items-center gap-3">
                   <Users className="w-6 h-6 " />
                   <h2 className="text-2xl font-semibold ">{community.name}</h2>
-                  <span className="bg-foreground text-background px-3 py-1 rounded-full text-sm">
+                  <span className="whitespace-nowrap bg-foreground text-background px-3 py-1 rounded-full text-sm">
                     {community.emails.length} members
                   </span>
                 </div>

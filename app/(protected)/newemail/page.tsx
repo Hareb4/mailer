@@ -58,8 +58,6 @@ export default function RichTextEmailSender() {
   useEffect(() => {
     const fetchUserAndConfigs = async () => {
       const { data } = await axios.get("/api/configs");
-      console.log("configs after get fetch on load: ", data);
-
       setConfigs(data || []);
     };
 
@@ -70,14 +68,6 @@ export default function RichTextEmailSender() {
     socket.on("connect", () => {
       console.log("Socket connected successfully", socket.id);
     });
-
-    // socket.on("connect_error", (error) => {
-    //   console.error("Socket connection error:", error);
-    // });
-
-    // socket.on("disconnect", (reason) => {
-    //   console.log("Socket disconnected:", reason);
-    // });
 
     // Listen for progress updates
     socket.on("progress", (data: ProgressData) => {
@@ -94,9 +84,9 @@ export default function RichTextEmailSender() {
     };
   }, []);
 
-  useEffect(() => {
-    console.log(emailData);
-  }, [emailData]);
+  // useEffect(() => {
+  //   console.log(emailData);
+  // }, [emailData]);
 
   // Handling email failure
   const handleEmailFailure = (data: { email: string; error: string }) => {
@@ -152,7 +142,7 @@ export default function RichTextEmailSender() {
 
     const api_url = "http://127.0.0.1:5000/send-email"; // Flask endpoint
 
-    console.log("selectedConfig : ", selectedConfig);
+    // console.log("selectedConfig : ", selectedConfig);
 
     if (!configs || !selectedConfig) {
       throw new Error("User data or selected config not available.");

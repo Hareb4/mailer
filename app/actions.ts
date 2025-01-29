@@ -48,7 +48,6 @@ export const forgotPasswordAction = async (email: string) => {
   const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET!, {
     expiresIn: "5m",
   });
-  console.log(process.env.EMAIL_AUTH!);
 
   // Construct the email content with the token
   const mailOptions = {

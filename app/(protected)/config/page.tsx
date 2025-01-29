@@ -35,7 +35,7 @@ function ConfigList({
             {/* Prioritize loading of important content */}
             <div className="space-y-2">
               <h3 className="text-xl font-semibold">{config.name}</h3>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-500">
                 <span className="font-medium">Email:</span> {config.from_email}
               </p>
               {/* Defer less important content */}

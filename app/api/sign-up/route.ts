@@ -19,7 +19,9 @@ export const POST = async (request: NextRequest) => {
 
     const user = await User.findOne({ email });
     if (user) {
-      return new Response("Username already exist", { status: 400 });
+      return new Response("Email already exists", {
+        status: 401,
+      });
     }
 
     const salt = await genSalt(12);

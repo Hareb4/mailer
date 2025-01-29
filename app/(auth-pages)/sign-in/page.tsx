@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
+import { Loading } from "@/components/custome/loading";
 
 const defaultData = { email: "", password: "" };
 
 export default function Login() {
   const [data, setData] = useState(defaultData);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
 
@@ -23,19 +25,16 @@ export default function Login() {
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent default form submission
     setError("");
-
-    // Debugging: Log the current values of email and password
-    console.log("Email:", data.email);
-    console.log("Password:", data.password);
+    setIsLoading(true);
 
     if (!data.email || !data.password) {
       alert("Please fill all mandatory parameters");
+      setIsLoading(false);
       return;
     }
 
     try {
       const response = await axios.post("/api/sign-in", data);
-      console.log("Response: ", response);
       setData(defaultData);
 
       if (response.status === 200) {
@@ -43,11 +42,12 @@ export default function Login() {
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        console.log(error.response);
         setError(error.response?.data);
       } else {
-        console.log("An unexpected error occurred:", error);
+        setError("An unexpected error occurred: " + error);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -85,8 +85,10 @@ export default function Login() {
           required
           onChange={onValueChange}
         />
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? <Loading text="Signing in..." /> : "Sign in"}
+        </Button>
         <p className="text-red-500">{error}</p>
-        <Button type="submit">Sign in</Button>
       </div>
     </form>
   );

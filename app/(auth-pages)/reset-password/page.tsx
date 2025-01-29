@@ -5,16 +5,18 @@ import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
-
+import { useToast } from "@/hooks/use-toast";
+import { Loading } from "@/components/custome/loading";
 const defaultData = { password: "", confirmPassword: "" };
 
 export default function ResetPassword() {
   const [data, setData] = useState(defaultData);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  console.log("token: ", token);
+  const { toast } = useToast();
 
   // Redirect if no token is provided
   if (!token) {
@@ -30,14 +32,17 @@ export default function ResetPassword() {
   const onResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
 
     if (!data.password || !data.confirmPassword) {
       setError("Please fill all mandatory fields");
+      setIsLoading(false);
       return;
     }
 
     if (data.password !== data.confirmPassword) {
       setError("Passwords do not match");
+      setIsLoading(false);
       return;
     }
 
@@ -49,6 +54,10 @@ export default function ResetPassword() {
 
       if (response.status === 200) {
         router.push("/sign-in");
+        toast({
+          title: "Password reset",
+          description: "Your password has been reset successfully",
+        });
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -62,6 +71,8 @@ export default function ResetPassword() {
       } else {
         setError("An unexpected error occurred");
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -92,7 +103,9 @@ export default function ResetPassword() {
         />
 
         {error && <p className="text-red-500">{error}</p>}
-        <Button type="submit">Reset Password</Button>
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? <Loading text="Resetting..." /> : "Reset Password"}
+        </Button>
       </div>
     </form>
   );

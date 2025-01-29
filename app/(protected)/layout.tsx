@@ -13,19 +13,6 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // const headersList = await headers();
-  // console.log("headersList: ", headersList);
-  // const domain = headersList.get("host") || "";
-  // const fullUrl = headersList.get("referer") || "";
-  // const pathname = new URL(fullUrl).pathname;
-  // console.log("pathname: ", pathname);
-  // console.log("domain: ", domain);
-  // // Skip authentication for reset-password route
-  // if (pathname.includes("/reset-password")) {
-  //   console.log("Navigating to reset password");
-  //   return <div>{children}</div>;
-  // }
-
   // Proceed with normal authentication for other routes
   const mongouser = await getUserFromToken();
 

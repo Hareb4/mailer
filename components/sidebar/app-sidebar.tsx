@@ -174,11 +174,11 @@ const data = {
       url: "/config",
       icon: Map,
     },
-    {
-      name: "Lists",
-      url: "/lists",
-      icon: TableProperties,
-    },
+    // {
+    //   name: "Lists",
+    //   url: "/lists",
+    //   icon: TableProperties,
+    // },
   ],
 };
 

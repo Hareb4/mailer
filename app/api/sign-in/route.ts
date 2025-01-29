@@ -44,7 +44,7 @@ export const POST = async (NextRequest: NextResponse) => {
     response.cookies.set("token", token, { httpOnly: true });
     return response;
   } catch (error) {
-    console.log("Error");
+    console.log("Error: ",error);
     return new Response("Something went wrong ", { status: 500 });
   }
 };
