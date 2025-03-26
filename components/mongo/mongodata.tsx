@@ -5,18 +5,7 @@ import mongoose from "mongoose";
 export default async function MongoDataPage() {
   // Connect to MongoDB
   await Connection();
-
   const data = await ConfigModel.find({}).lean();
-
-  // const db = mongoose.connection;
-  // const collection = db.collection("configurations");
-
-  // // Fetch data
-  // const cursor = collection.find({}); // Returns a cursor
-  // const data = await cursor.toArray();
-
-  // // Log data on the server console
-  // console.log("Fetched data from MongoDB:", data);
 
   return (
     <div>

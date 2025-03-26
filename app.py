@@ -216,7 +216,7 @@ def send_email_endpoint():
         failed_emails = []
 
         # Process emails with ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=3) as executor:
             futures = []
 
             # Submit tasks as before
@@ -354,6 +354,11 @@ def send_email_endpoint():
         except:
             pass
         raise e
+
+
+@app.route('/test-connection', methods=['GET'])
+def test_connection():
+    return jsonify({'success': True})
 
 
 if __name__ == '__main__':

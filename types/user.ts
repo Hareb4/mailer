@@ -8,7 +8,6 @@ export interface MongoUser {
   email: string;
   profile_image_url?: string;
 }
-console.log("pio: ", mongoose.models);
 
 // Mongoose schema and model for MongoDB interaction
 const userSchema = new mongoose.Schema(

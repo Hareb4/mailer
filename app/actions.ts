@@ -12,6 +12,8 @@ import { ObjectId } from "mongodb";
 import nodemailer from "nodemailer";
 import { ApiError } from "next/dist/server/api-utils";
 import UserModel from "@/types/user";
+import { jwtVerify } from "jose";
+import { NextRequest } from "next/server";
 
 function generateRandomProfileImage(name: string): string {
   // Using DiceBear API to generate random avatars
@@ -77,7 +79,6 @@ export const getUserFromToken = async () => {
   const token = (await cookieStore).get("token")?.value;
 
   if (!token) {
-    // redirect("/sign-in");
     throw new Error("Not authenticated");
   }
 
@@ -86,18 +87,18 @@ export const getUserFromToken = async () => {
       email: string;
       profile_image_url?: string;
       name: string;
-      _id: string; // Ensure this matches the type you expect
+      _id: string;
     };
 
-    const user = {
-      _id: decoded._id, // Convert id to ObjectId if needed
+    // Return user object
+    return {
+      _id: decoded._id,
       name: decoded.name,
       email: decoded.email,
       profile_image_url: decoded.profile_image_url,
     };
-    return user;
   } catch (err) {
-    // redirect("/sign-in");
+    console.error("Token verification error:", err);
     throw new Error("Invalid token");
   }
 };

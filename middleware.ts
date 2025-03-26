@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const isPublicPath =
     path === "/sign-in" || path === "/sign-up" || path === "/";
   const token = request.cookies.get("token")?.value || "";
-
+  console.log("from middleware");
   if (isPublicPath) {
     console.log("Public path accessed, continuing");
     return NextResponse.next();
@@ -34,5 +34,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/sign-in", "/sign-up", "/config"],
+  matcher: ["/", "/sign-in", "/sign-up", "/config", "/newemail", "/lists"],
 };

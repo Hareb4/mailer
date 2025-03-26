@@ -17,10 +17,8 @@ export async function POST(request: Request) {
       await mongoose.connect(process.env.MONGODB_URI!);
     }
     const token = (await cookies()).get("token")?.value;
-    console.log("token in /api/configs", token);
 
     if (!token) {
-      console.log("Unauthorized!!!", token);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -42,15 +40,6 @@ export async function POST(request: Request) {
     // Save the configuration to the database
     await newConfig.save();
 
-    // const user = await getUserFromToken();
-    // const data = await request.json();
-
-    // // Create new config with converted user ID
-    // const newConfig = await ConfigModel.create({
-    //   ...data,
-    //   user_id: new mongoose.Types.ObjectId(user._id), // Convert string ID to ObjectId
-    // });
-
     return NextResponse.json(newConfig, { status: 201 });
   } catch (error) {
     console.error("Config creation error:", error); // Add detailed error logging
@@ -71,10 +60,8 @@ export async function GET(req: Request) {
 
     // Get the user token from cookies (or adapt based on your auth system)
     const token = (await cookies()).get("token")?.value;
-    console.log("token in /api/configs", token);
 
     if (!token) {
-      console.log("Unauthorized!!!", token);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -82,17 +69,14 @@ export async function GET(req: Request) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
       _id: string;
     };
-    console.log("decoded", decoded);
+
     if (!decoded?._id) {
-      console.log("!decoded?.userId", decoded);
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
     const userId = new ObjectId(decoded._id);
 
     // Fetch configurations for the user
     const allconfigs = await ConfigModel.find().lean();
-    console.log("all configs: ", allconfigs);
-    console.log("userID : ", userId);
     const configs = await ConfigModel.find({ user_id: userId }).lean();
 
     // Frontend Response (Sending Data to Client)
@@ -101,7 +85,6 @@ export async function GET(req: Request) {
       _id: config._id?.toString(), // Convert to string for frontend
       user_id: config.user_id.toString(),
     }));
-    console.log("serializedConfigs", serializedConfigs);
 
     return NextResponse.json(serializedConfigs);
   } catch (error) {

@@ -87,3 +87,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+.config-form-input {
+  @apply w-full bg-white dark:bg-[#121212] border rounded-md px-3 py-2.5 text-sm focus:outline-none transition-colors;
+}
+
+.config-card{
+  @apply bg-background dark:bg-[#18181B] text-foreground rounded-xl p-4 transition-all hover:shadow-sm border;
+}

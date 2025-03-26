@@ -13,8 +13,6 @@ export interface Config {
   smtp_password: string;
 }
 
-console.log("pio config: ", mongoose.models);
-
 // Mongoose schema and model for MongoDB interaction
 const configSchema = new mongoose.Schema(
   {

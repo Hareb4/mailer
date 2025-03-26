@@ -16,10 +16,13 @@ import { ProgressBar } from "@/components/email-form/ProgressBar";
 import { FailedEmails } from "@/components/email-form/FailedEmails";
 import { EmailForm } from "@/components/email-form/EmailForm";
 import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const socket = io("http://127.0.0.1:5000"); // Adjust the URL as needed
 
-export default function RichTextEmailSender() {
+export default function App() {
   const [configs, setConfigs] = useState<any[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<string>("");
   const [logView, setLogView] = useState(false);
@@ -54,6 +57,7 @@ export default function RichTextEmailSender() {
   const [isTest, setIsTest] = useState(false);
   const { editor } = useEmailEditor();
   const [shouldSend, setShouldSend] = useState(false);
+  // const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserAndConfigs = async () => {
@@ -83,10 +87,6 @@ export default function RichTextEmailSender() {
       socket.off("progress");
     };
   }, []);
-
-  // useEffect(() => {
-  //   console.log(emailData);
-  // }, [emailData]);
 
   // Handling email failure
   const handleEmailFailure = (data: { email: string; error: string }) => {
@@ -145,7 +145,11 @@ export default function RichTextEmailSender() {
     // console.log("selectedConfig : ", selectedConfig);
 
     if (!configs || !selectedConfig) {
-      throw new Error("User data or selected config not available.");
+      const errorMessage = !configs
+        ? "No configurations available. Please check your settings."
+        : "No configuration selected. Please select a configuration.";
+
+      toast.error(errorMessage);
     }
 
     const selectedConfigObj = configs.find(
@@ -208,11 +212,13 @@ export default function RichTextEmailSender() {
 
       if (!response.ok) {
         const errorData = await response.text(); // Get the error response
+        toast.error(`Failed to send email: ${errorData}`);
         throw new Error(`Failed to send email: ${errorData}`);
       }
 
       const result = await response.json();
       if (!result.success) {
+        toast.error("Failed to send email");
         throw new Error("Failed to send email");
       }
       if (result.failed_emails.length > 0) {
@@ -221,41 +227,16 @@ export default function RichTextEmailSender() {
         setFailedEmails(result.failed_emails);
       }
 
-      // Add campaign record to Supabase
-      // const supabase = createClient();
-      // const {
-      //   data: { user },
-      // } = await supabase.auth.getUser();
-
-      // if (!user) throw new Error("User not authenticated");
-
-      // const { error: campaignError } = await supabase
-      //   .from("email_campaigns")
-      //   .insert({
-      //     user_id: user.id,
-      //     config_id: selectedConfigObj.id,
-      //     subject: emailData.emailSubject,
-      //     body: editor?.getHTML() || "",
-      //     email_count: result.email_count || 0,
-      //     success_count: result.success_count || 0,
-      //     failure_count: result.failure_count || 0,
-      //   })
-      //   .single();
-
-      // if (campaignError) {
-      //   console.error("Error creating campaign record:", campaignError);
-      // }
-
       console.log(result);
     } catch (error) {
-      console.error("Error:", error);
+      toast.error("Error:" + error);
     }
   };
 
   // Processing failed emails
   const processFailedEmails = async () => {
     if (!emailData.excelFile) {
-      console.error("No Excel file found in emailData");
+      toast.error("No Excel file found in emailData");
       return;
     }
     console.log("failedEmailsbeforeSend :", failedEmailsbeforeSend);
@@ -293,14 +274,6 @@ export default function RichTextEmailSender() {
       processFailedEmails();
     }, 0);
   };
-
-  // const editFailedEmails = () => {
-  //   createFailedEmailsFileWithExisting();
-  //   console.log("failedEmailsbeforeSend", failedEmailsbeforeSend);
-  //   setLogView(false);
-  //   setEditorView(true);
-  // };
-
   // Resending failed emails
   const resendFailedEmails = (e: React.FormEvent) => {
     e.preventDefault();
@@ -314,7 +287,6 @@ export default function RichTextEmailSender() {
   };
 
   useEffect(() => {
-    console.log("shouldSend", shouldSend);
     if (shouldSend && emailData.excelFile) {
       // Step 3: Handle submission only after state updates
       submitEmailCampaign();
@@ -400,6 +372,101 @@ export default function RichTextEmailSender() {
     setFailedEmails([]);
   };
 
+  const submitTestEmailCampaign = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    console.log("hi from submitTestEmailCampaign");
+    setEditorView(false);
+
+    const api_url = "http://127.0.0.1:5000/send-test"; // Flask endpoint
+
+    if (!configs || !selectedConfig) {
+      const errorMessage = !configs
+        ? "No configurations available. Please check your settings."
+        : "No configuration selected. Please select a configuration.";
+      toast.error(errorMessage);
+      return; // Exit early if there's an error
+    }
+
+    const selectedConfigObj = configs.find(
+      (config) => config._id === selectedConfig
+    );
+
+    const dataToSend = new FormData();
+    console.log("selectedConfigObj", selectedConfigObj);
+    dataToSend.append("smtp_server", selectedConfigObj.smtp_server);
+    dataToSend.append("port", selectedConfigObj.smtp_port.toString());
+    dataToSend.append("sender_email", selectedConfigObj.smtp_email);
+    dataToSend.append("smtp_from", selectedConfigObj.from_email);
+    dataToSend.append(
+      "sender_password",
+      decrypt(selectedConfigObj.smtp_password)
+    );
+    dataToSend.append("subject_template", emailData.emailSubject);
+    dataToSend.append("body_template", editor?.getHTML() || "");
+    dataToSend.append("poster_url", emailData.posterUrl);
+    console.log("test email: ", emailData.testEmail);
+    dataToSend.append("test_email", emailData.testEmail);
+
+    // Append attachments
+    emailData.documents.forEach((file) => {
+      dataToSend.append("attachments", file);
+    });
+
+    // Append poster URL if provided
+    if (emailData.posters.length > 0) {
+      emailData.posters.forEach((file) => {
+        dataToSend.append("posters", file);
+      });
+    }
+
+    // Wrap the email sending logic in a promise
+    const promise = async () => {
+      const response = await fetch(api_url, {
+        method: "POST",
+        body: dataToSend, // Send FormData directly
+      });
+      if (!response.ok) {
+        return response.text().then((errorData) => {
+          throw new Error(`Failed to send email: ${errorData}`);
+        });
+      }
+      return await response.json();
+    };
+
+    // Use toast.promise to handle the promise
+    toast.promise(promise(), {
+      loading: "Sending email...",
+      success: (data) => {
+        return `${data.success ? "Email sent successfully" : "Failed to send email"}`;
+      },
+      error: (error) => {
+        return error.message || "Error";
+      },
+    });
+  };
+
+  const testConnection = async () => {
+    const api_url = "http://127.0.0.1:5000/test-connection";
+    const response = await fetch(api_url, {
+      method: "GET",
+    });
+    console.log(response.ok);
+    if (response.ok) {
+      toast.success("Success");
+    } else {
+      toast.error("Failed");
+    }
+  };
+
+  const removeExcelFile = () => {
+    setEmailData((prev) => ({
+      ...prev,
+      excelFile: null,
+    }));
+  };
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">New Email</h1>
@@ -407,16 +474,19 @@ export default function RichTextEmailSender() {
         emailData={emailData}
         onInputChange={handleFormInputChange}
         onFileChange={handleAttachmentChange}
+        removeExcelFile={removeExcelFile}
         removeDocument={removeAttachedDocument}
         removePoster={removeAttachedPoster}
         editor={editor}
         onSubmit={submitEmailCampaign}
+        onTestSubmit={submitTestEmailCampaign}
         setLogView={setLogView}
         configs={configs}
         selectedConfig={selectedConfig}
         setSelectedConfig={setSelectedConfig}
         onPreview={generateEmailPreview}
         resetForm={resetForm}
+        testConnection={testConnection}
       />
 
       {logView && (

@@ -172,7 +172,7 @@ const data = {
     {
       name: "Configurations",
       url: "/config",
-      icon: Map,
+      icon: Mail,
     },
     // {
     //   name: "Lists",

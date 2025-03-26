@@ -10,7 +10,6 @@ Connection();
 export const POST = async (NextRequest: NextResponse) => {
   try {
     const body = await NextRequest.json();
-    console.log(body);
     const { email, password } = body;
 
     if (!email || !password) {

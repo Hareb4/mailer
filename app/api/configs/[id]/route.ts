@@ -8,12 +8,14 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const { id } = await params;
+
   try {
     const user = await getUserFromToken();
     const data = await request.json();
 
     const updatedConfig = await ConfigModel.findOneAndUpdate(
-      { _id: params.id, user_id: user._id },
+      { _id: id, user_id: user._id },
       data,
       { new: true }
     );
@@ -36,11 +38,13 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const { id } = await params;
+
   try {
     const user = await getUserFromToken();
 
     const deletedConfig = await ConfigModel.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       user_id: user._id,
     });
 

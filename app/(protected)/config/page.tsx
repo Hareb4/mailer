@@ -7,12 +7,26 @@ import { encrypt } from "@/utils/crypt";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Config, ConfigFormData } from "@/types/types";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Paperclip, Image, FilePlus, Plus, Mail } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Lazy load the form component since it's not needed immediately
 const ConfigForm = lazy(() => import("@/components/config/ConfigForm"));
 
 // Optimized ConfigList with virtualization for large lists
-function ConfigList({
+function ConfigList2({
   configs,
   onEdit,
   onDelete,
@@ -66,6 +80,73 @@ function ConfigList({
   );
 }
 
+function ConfigList({
+  configs,
+  onEdit,
+  onDelete,
+}: {
+  configs: Config[];
+  onEdit: (config: Config) => void;
+  onDelete: (id: string) => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <h2 className="text-lg font-medium mb-4">Saved Configurations</h2>
+
+      {configs.length === 0 ? (
+        <div className="text-center py-8 text-gray-400 text-sm">
+          No configurations saved yet
+        </div>
+      ) : (
+        configs.map((config) => (
+          <div key={config._id} className="config-card">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-base font-medium">{config.name}</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {config.from_email}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                <div>
+                  <span className="text-gray-400">SMTP Server</span>
+                  <p className="text-gray-600 truncate">{config.smtp_server}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Port</span>
+                  <p className="text-gray-600">{config.smtp_port}</p>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-400">SMTP Email</span>
+                  <p className="text-gray-600 truncate">{config.smtp_email}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={() => onEdit(config)}
+                className="px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-600 dark:bg-blue-600 dark:text-white rounded-full hover:bg-blue-100 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(config._id)}
+                className="px-3 py-1.5 text-xs font-medium bg-red-50 text-red-600 dark:bg-red-600 dark:text-white rounded-full hover:bg-red-100 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
 // Optimized loading skeleton
 function ConfigListLoading() {
   return (
@@ -106,6 +187,12 @@ export default function ConfigPage() {
   const [error, setError] = useState<Error | null>(null);
   const [editingConfig, setEditingConfig] = useState<Config | null>(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [configToDelete, setConfigToDelete] = useState<string | null>(null);
 
   // Optimized data fetching
   useEffect(() => {
@@ -175,23 +262,35 @@ export default function ConfigPage() {
 
       setConfigs(updatedConfigs);
       setEditingConfig(null);
+      setIsFormVisible(false);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("An error occurred"));
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this configuration?")) return;
+  // Function to show delete confirmation modal
+  const showDeleteModal = (id: string) => {
+    setConfigToDelete(id);
+    setIsDeleteModalVisible(true);
+  };
+
+  // Function to handle actual deletion
+  const confirmDelete = async () => {
+    if (!configToDelete) return;
 
     try {
       // Optimistic delete
-      setConfigs(configs.filter((c) => c._id !== id));
-      await axios.delete(`/api/configs/${id}`);
+      setConfigs(configs.filter((c) => c._id !== configToDelete));
+      await axios.delete(`/api/configs/${configToDelete}`);
     } catch (err) {
       setError(err instanceof Error ? err : new Error("An error occurred"));
       // Revert on error
       const { data } = await axios.get("/api/configs");
       setConfigs(data);
+    } finally {
+      setIsDeleteModalVisible(false);
+      setConfigToDelete(null);
+      toast.success("Configuration deleted successfully");
     }
   };
 
@@ -200,48 +299,122 @@ export default function ConfigPage() {
   }
 
   return (
-    <div className="p-4 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">
-        <span className="inline-block">Email Configurations</span>
-      </h1>
+    <>
+      <div className="p-6 max-w-7xl mx-auto rounded-2xl shadow-sm">
+        {/* Header with action button */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-medium ">Email Configurations</h1>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Config List with Suspense */}
-        <Suspense fallback={<ConfigListLoading />}>
-          <ConfigList
-            configs={configs}
-            onEdit={(config) => {
-              setEditingConfig(config);
-              setIsFormVisible(true);
-            }}
-            onDelete={handleDelete}
-          />
-        </Suspense>
-
-        {/* Lazy load the form */}
-        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-          {isFormVisible && (
-            <ConfigForm
-              onSubmit={handleSubmit}
-              editingConfig={editingConfig}
-              onCancel={() => {
-                setEditingConfig(null);
-                setIsFormVisible(false);
-              }}
-            />
+          {!isFormVisible && (
+            <button
+              onClick={() => setIsFormVisible(true)}
+              className="flex items-center gap-2 h-10 px-4 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors"
+            >
+              <span className="text-sm font-medium">Add Configuration</span>
+            </button>
           )}
-        </Suspense>
+        </div>
 
-        {/* Add New Config Button */}
-        {!isFormVisible && (
-          <button
-            onClick={() => setIsFormVisible(true)}
-            className="h-12 px-4 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-          >
-            Add New Configuration
-          </button>
-        )}
+        {/* Main content area */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Config List */}
+          <div className="overflow-hidden">
+            <Suspense fallback={<ConfigListLoading />}>
+              <ConfigList
+                configs={configs}
+                onEdit={(config) => {
+                  setEditingConfig(config);
+                  setIsFormVisible(true);
+                }}
+                onDelete={showDeleteModal}
+              />
+            </Suspense>
+          </div>
+
+          {/* Config Form */}
+          <div className="p-6 rounded-2xl">
+            <Suspense
+              fallback={
+                <div className="animate-pulse space-y-4">
+                  <div className="h-5 bg-gray-200 rounded-full w-1/3"></div>
+                  <div className="h-32 bg-gray-200 rounded-lg"></div>
+                  <div className="h-8 bg-gray-200 rounded-full w-1/2"></div>
+                </div>
+              }
+            >
+              {isFormVisible ? (
+                <>
+                  <h2 className="text-lg font-medium mb-6 ">
+                    {editingConfig ? "Edit Configuration" : "New Configuration"}
+                  </h2>
+                  <ConfigForm
+                    onSubmit={handleSubmit}
+                    editingConfig={editingConfig}
+                    onCancel={() => {
+                      setEditingConfig(null);
+                      setIsFormVisible(false);
+                    }}
+                  />
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                  <div className="w-16 h-16 mb-4 bg-gray-100 dark:bg-[#18181B] rounded-full flex items-center justify-center">
+                    <svg
+                      className="w-8 h-8 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-center text-sm">
+                    Select a configuration to edit or create a new one
+                  </p>
+                </div>
+              )}
+            </Suspense>
+          </div>
+        </div>
+
+        {/* Status messages */}
+        <div className="mt-6">
+          {statusMessage && (
+            <div
+              className={`p-4 rounded-full text-sm ${statusMessage.type === "success" ? "bg-green-50 text-green-600" : "bg-red-50 text-red-600"}`}
+            >
+              {statusMessage.message}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Modal component for confirmation */}
+
+      <AlertDialog open={isDeleteModalVisible}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this configuration?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeleteModalVisible(false)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>
+              Yes, Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
