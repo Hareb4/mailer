@@ -151,7 +151,9 @@ export const EmailForm = ({
                   {emailData.excelFile.name}
                 </span>
                 <Button
-                  onClick={() => {
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
                     removeExcelFile();
                     if (excelFileInputRef.current) {
                       excelFileInputRef.current.value = "";
@@ -197,8 +199,11 @@ export const EmailForm = ({
                   >
                     <span className="max-w-xs text-xs">{doc.name}</span>
                     <Button
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
                         removeDocument(index);
+                        console.log("removeDocument", index);
                         if (emailData.documents.length === 1) {
                           if (documentsInputRef.current) {
                             documentsInputRef.current.value = "";
@@ -263,7 +268,9 @@ export const EmailForm = ({
                       {poster.name}
                     </span>
                     <Button
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
                         removePoster(index);
                         if (emailData.posters.length === 1) {
                           if (postersInputRef.current) {
@@ -317,7 +324,10 @@ export const EmailForm = ({
           <div className="flex gap-4">
             <Button
               type="button"
-              onClick={() => setLogView(true)}
+              onClick={(e) => {
+                e.preventDefault();
+                setLogView(true);
+              }}
               variant="outline"
               className="w-full"
             >
@@ -342,7 +352,10 @@ export const EmailForm = ({
           <div className="hidden">
             <Button
               type="button"
-              onClick={onPreview}
+              onClick={(e) => {
+                e.preventDefault();
+                onPreview();
+              }}
               variant="outline"
               className="w-full"
             >
@@ -350,7 +363,8 @@ export const EmailForm = ({
             </Button>
             <Button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 testConnection();
               }}
               variant="outline"

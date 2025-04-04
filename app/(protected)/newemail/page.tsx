@@ -88,6 +88,10 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    console.log("emailData", emailData);
+  }, [emailData]);
+
   // Handling email failure
   const handleEmailFailure = (data: { email: string; error: string }) => {
     setFailedEmails((prev) => [...prev, data]);
@@ -119,6 +123,7 @@ export default function App() {
 
   // Removing attached document
   const removeAttachedDocument = (index: number) => {
+    console.log("removeAttachedDocument", index);
     setEmailData((prev) => ({
       ...prev,
       documents: prev.documents.filter((_, i) => i !== index),
@@ -289,6 +294,7 @@ export default function App() {
   useEffect(() => {
     if (shouldSend && emailData.excelFile) {
       // Step 3: Handle submission only after state updates
+      console.log("shouldSend", shouldSend);
       submitEmailCampaign();
       setShouldSend(false); // Reset the trigger
     }
@@ -356,6 +362,17 @@ export default function App() {
     setEditorView(false);
     setLogView(false);
     setFailedEmailsbeforeSend([]);
+    setProgress({
+      percentage: 0,
+      status: "Not started",
+      email: "",
+      sentEmails: 0,
+      totalEmails: 0,
+      estimatedTimeRemaining: "",
+      speed: "",
+      avgTimePerEmail: "",
+      message: "",
+    });
 
     setEmailData({
       emailSubject: "",

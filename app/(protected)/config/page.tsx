@@ -333,53 +333,43 @@ export default function ConfigPage() {
 
           {/* Config Form */}
           <div className="p-6 rounded-2xl">
-            <Suspense
-              fallback={
-                <div className="animate-pulse space-y-4">
-                  <div className="h-5 bg-gray-200 rounded-full w-1/3"></div>
-                  <div className="h-32 bg-gray-200 rounded-lg"></div>
-                  <div className="h-8 bg-gray-200 rounded-full w-1/2"></div>
+            {isFormVisible ? (
+              <>
+                <h2 className="text-lg font-medium mb-6 ">
+                  {editingConfig ? "Edit Configuration" : "New Configuration"}
+                </h2>
+                <ConfigForm
+                  onSubmit={handleSubmit}
+                  editingConfig={editingConfig}
+                  onCancel={() => {
+                    setEditingConfig(null);
+                    setIsFormVisible(false);
+                  }}
+                />
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <div className="w-16 h-16 mb-4 bg-gray-100 dark:bg-[#18181B] rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                    />
+                  </svg>
                 </div>
-              }
-            >
-              {isFormVisible ? (
-                <>
-                  <h2 className="text-lg font-medium mb-6 ">
-                    {editingConfig ? "Edit Configuration" : "New Configuration"}
-                  </h2>
-                  <ConfigForm
-                    onSubmit={handleSubmit}
-                    editingConfig={editingConfig}
-                    onCancel={() => {
-                      setEditingConfig(null);
-                      setIsFormVisible(false);
-                    }}
-                  />
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                  <div className="w-16 h-16 mb-4 bg-gray-100 dark:bg-[#18181B] rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-8 h-8 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-center text-sm">
-                    Select a configuration to edit or create a new one
-                  </p>
-                </div>
-              )}
-            </Suspense>
+                <p className="text-center text-sm">
+                  Select a configuration to edit or create a new one
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

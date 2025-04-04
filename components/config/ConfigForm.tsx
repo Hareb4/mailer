@@ -46,7 +46,7 @@ export default function ConfigForm({
           <div>
             <label className="block text-sm  mb-1.5">From Email</label>
             <input
-              type="email"
+              type="text"
               value={formData.from_email}
               onChange={(e) =>
                 setFormData({ ...formData, from_email: e.target.value })
