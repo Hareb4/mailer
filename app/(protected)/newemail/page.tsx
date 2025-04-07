@@ -19,11 +19,25 @@ import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import { Image, Mail, FileText, FileSpreadsheet } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Badge as UIBadge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 const socket = io("http://127.0.0.1:5000"); // Adjust the URL as needed
 
 export default function App() {
-  const [configs, setConfigs] = useState<any[]>([]);
+  const [configs, setConfigs] = useState<Config[]>([]);
   const [selectedConfig, setSelectedConfig] = useState<string>("");
   const [logView, setLogView] = useState(false);
   const [EditorView, setEditorView] = useState(false);
@@ -40,6 +54,7 @@ export default function App() {
     documents: [],
     posters: [],
     posterUrl: "",
+    emailCount: 0,
   });
   const [progress, setProgress] = useState<ProgressData>({
     status: "",
@@ -55,9 +70,9 @@ export default function App() {
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [showPreview, setShowPreview] = useState(false);
   const [isTest, setIsTest] = useState(false);
+  const [open, setOpen] = useState(false);
   const { editor } = useEmailEditor();
   const [shouldSend, setShouldSend] = useState(false);
-  // const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserAndConfigs = async () => {
@@ -89,8 +104,21 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    console.log("emailData", emailData);
-  }, [emailData]);
+    console.log("hii");
+    if (emailData.excelFile) {
+      countemails();
+    }
+  }, [emailData.excelFile]);
+
+  useEffect(() => {
+    console.log(configs);
+  }, [configs]);
+
+  const showSendEmailDialog = () => {
+    // Your logic here
+    console.log("Button clicked!");
+    setOpen(true);
+  };
 
   // Handling email failure
   const handleEmailFailure = (data: { email: string; error: string }) => {
@@ -121,6 +149,28 @@ export default function App() {
     }
   };
 
+  // get the excel .xlsx file and count the emails in it or the rows
+  const countemails = () => {
+    if (!emailData.excelFile) {
+      console.error("No Excel file provided.");
+      return; // Exit if no file is present
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      setEmailData((prev) => ({
+        ...prev,
+        emailCount: jsonData.length,
+      }));
+    };
+
+    reader.readAsArrayBuffer(emailData.excelFile); // Read the file as an ArrayBuffer
+  };
+
   // Removing attached document
   const removeAttachedDocument = (index: number) => {
     console.log("removeAttachedDocument", index);
@@ -143,6 +193,7 @@ export default function App() {
     if (e) {
       e.preventDefault();
     }
+    setOpen(false);
     setEditorView(false);
 
     const api_url = "http://127.0.0.1:5000/send-email"; // Flask endpoint
@@ -382,6 +433,7 @@ export default function App() {
       documents: [],
       posters: [],
       posterUrl: "",
+      emailCount: 0,
     });
     setSelectedConfig("");
     setShouldSend(false);
@@ -412,6 +464,9 @@ export default function App() {
 
     const dataToSend = new FormData();
     console.log("selectedConfigObj", selectedConfigObj);
+    if (!selectedConfigObj) {
+      throw new Error("Selected configuration not found in user data.");
+    }
     dataToSend.append("smtp_server", selectedConfigObj.smtp_server);
     dataToSend.append("port", selectedConfigObj.smtp_port.toString());
     dataToSend.append("sender_email", selectedConfigObj.smtp_email);
@@ -484,6 +539,8 @@ export default function App() {
     }));
   };
 
+  const cfg = configs.find((config) => config._id === selectedConfig);
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">New Email</h1>
@@ -496,6 +553,7 @@ export default function App() {
         removePoster={removeAttachedPoster}
         editor={editor}
         onSubmit={submitEmailCampaign}
+        showSendEmailDialog={showSendEmailDialog}
         onTestSubmit={submitTestEmailCampaign}
         setLogView={setLogView}
         configs={configs}
@@ -526,6 +584,125 @@ export default function App() {
           createExcelFile={exportFailedEmailsToExcel}
         />
       )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Email Review</DialogTitle>
+            <DialogDescription>
+              Review the email details before sending via Excel file.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4 flex flex-col gap-4">
+            <div className="grid gap-4">
+              <div className="flex items-center gap-2">
+                <Mail className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="font-medium">From:</div>
+                <div className="truncate">{cfg?.from_email}</div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <div className="font-medium text-lg">
+                  {emailData.emailSubject}
+                </div>
+                <div
+                  dangerouslySetInnerHTML={{ __html: editor?.getHTML() || "" }}
+                  className="whitespace-pre-wrap text-sm max-h-[180px] overflow-y-auto"
+                ></div>
+              </div>
+
+              <Separator />
+
+              <div className="flex gap-6 w-full">
+                {/* LEFT SIDE - Attachments */}
+                {emailData.excelFile && (
+                  <div className="space-y-2">
+                    <h3 className="font-medium flex items-center gap-2">
+                      Excel Data Source
+                      <UIBadge variant="secondary" className="rounded-full">
+                        {emailData.emailCount} emails
+                      </UIBadge>
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="h-4 w-4 text-green-600 flex-shrink-0" />
+                      <div className="text-sm truncate">
+                        {emailData.excelFile?.name}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {emailData.documents && (
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Documents</h3>
+                    <div className="space-y-1">
+                      {emailData.documents.map((doc, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                          <div className="text-sm truncate">{doc.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {emailData.posters ? (
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Posters</h3>
+                    <div className="space-y-1">
+                      {emailData.posters.map((poster, index) => (
+                        <div className="flex items-center gap-2" key={index}>
+                          <Image className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                          <div className="text-sm truncate">{poster.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <h3 className="font-medium">Posters</h3>
+                    <p>No posters selected</p>
+                  </div>
+                )}
+              </div>
+              {/* RIGHT SIDE - Poster Preview */}
+              {emailData.posterUrl && (
+                <div className="space-y-3 w-full">
+                  <h3 className="font-medium">Poster Preview</h3>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {emailData.posterUrl}
+                  </div>
+                  {emailData.posterUrl.match(/\.(jpeg|jpg|gif|png)$/i) && (
+                    <Card className="overflow-hidden h-[160px] w-full">
+                      <CardContent className="p-2 h-full">
+                        <img
+                          src={emailData.posterUrl || "/placeholder.svg"}
+                          alt="Poster preview"
+                          className="w-full h-full object-contain"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src =
+                              "/placeholder.svg?height=200&width=300";
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Close
+            </Button>
+            <Button onClick={submitEmailCampaign}>Send Emails</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -32,6 +32,7 @@ interface EmailFormProps {
   resetForm: () => void;
   setLogView: (value: boolean) => void;
   testConnection: () => void;
+  showSendEmailDialog: () => void;
 }
 
 export const EmailForm = ({
@@ -51,13 +52,14 @@ export const EmailForm = ({
   onPreview,
   resetForm,
   testConnection,
+  showSendEmailDialog,
 }: EmailFormProps) => {
   const excelFileInputRef = useRef<HTMLInputElement | null>(null);
   const documentsInputRef = useRef<HTMLInputElement | null>(null);
   const postersInputRef = useRef<HTMLInputElement | null>(null);
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
+    <form className="space-y-6">
       <div className="space-y-4">
         {/* Config Selection */}
         <div className="space-y-2">
@@ -109,20 +111,6 @@ export const EmailForm = ({
               <EditorContent editor={editor} />
             </div>
           </div>
-        </div>
-
-        {/* Test Email */}
-        <div className="space-y-2">
-          <label htmlFor="testEmail" className="block text-sm font-medium">
-            Test Email
-          </label>
-          <Input
-            type="text"
-            name="testEmail"
-            placeholder="Test Email Address"
-            value={emailData.testEmail}
-            onChange={onInputChange}
-          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full text-sm">
@@ -312,10 +300,27 @@ export const EmailForm = ({
             onChange={onInputChange}
           />
         </div>
+        {/* Test Email */}
+        <div className="space-y-2">
+          <label htmlFor="testEmail" className="block text-sm font-medium">
+            Test Email
+          </label>
+          <Input
+            type="text"
+            name="testEmail"
+            placeholder="Test Email Address"
+            value={emailData.testEmail}
+            onChange={onInputChange}
+          />
+        </div>
 
         {/* Action Buttons */}
         <div className="flex gap-4">
-          <Button type="submit" className="w-full">
+          <Button
+            type="button"
+            onClick={showSendEmailDialog}
+            className="w-full"
+          >
             Send Emails
           </Button>
           <button type="reset" onClick={resetForm} className="w-full">

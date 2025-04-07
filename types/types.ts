@@ -26,6 +26,7 @@ export interface EmailData {
   documents: File[];
   posters: File[];
   posterUrl: string;
+  emailCount: number;
 }
 
 export interface FileMetadata {
