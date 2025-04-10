@@ -2,7 +2,6 @@ import { GeistSans } from "geist/font/sans";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import Connection from "@/lib/mongodb";
-// import { Toaster } from "@/components/ui/toaster";
 import { Toaster } from "@/components/ui/sonner";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -11,7 +10,7 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Shoba Mongo Mailer",
+  title: "Shoba Mailer",
   description: "The fastest way to send Emails",
 };
 
@@ -31,8 +30,8 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster closeButton richColors />
         </ThemeProvider>
-        <Toaster closeButton richColors />
       </body>
     </html>
   );

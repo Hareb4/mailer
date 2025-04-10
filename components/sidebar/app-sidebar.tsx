@@ -29,6 +29,7 @@ import {
   TableProperties,
   Trash2,
   Mail,
+  Settings,
 } from "lucide-react";
 
 import {
@@ -172,7 +173,7 @@ const data = {
     {
       name: "Configurations",
       url: "/config",
-      icon: Mail,
+      icon: Settings,
     },
     // {
     //   name: "Lists",

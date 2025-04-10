@@ -12,8 +12,8 @@ export default async function Layout({
         <div className="bg-Authimag bg-cover bg-no-repeat w-1/2 flex flex-col justify-between p-10 bg-foreground text-foreground">
           <div className="text-left">
             <div className="flex items-center text-gray-300 mb-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              <Link href="/">Back to Home</Link>
+              <ArrowLeft className="w-4 h-4 mr-2 text-white" />
+              <Link href="/" className="text-white">Back to Home</Link>
             </div>
             <h1 className="text-2xl font-semibold">Sobha Mailer</h1>
           </div>

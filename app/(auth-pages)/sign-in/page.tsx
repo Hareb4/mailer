@@ -66,6 +66,7 @@ export default function Login() {
           name="email"
           type="email"
           placeholder="you@example.com"
+          autoComplete="email"
           required
           onChange={onValueChange}
         />
@@ -82,6 +83,7 @@ export default function Login() {
           type="password"
           name="password"
           placeholder="Your password"
+          autoComplete="current-password"
           required
           onChange={onValueChange}
         />

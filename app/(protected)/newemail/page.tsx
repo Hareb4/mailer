@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import {
   Config,
   ProgressData,
@@ -15,8 +15,6 @@ import { decrypt } from "@/utils/crypt";
 import { ProgressBar } from "@/components/email-form/ProgressBar";
 import { FailedEmails } from "@/components/email-form/FailedEmails";
 import { EmailForm } from "@/components/email-form/EmailForm";
-import axios from "axios";
-import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,7 +32,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 
-const socket = io("http://127.0.0.1:5000"); // Adjust the URL as needed
+const emailApiUrl = "http://127.0.0.1:5000";
 
 export default function App() {
   const [configs, setConfigs] = useState<Config[]>([]);
@@ -76,7 +74,8 @@ export default function App() {
 
   useEffect(() => {
     const fetchUserAndConfigs = async () => {
-      const { data } = await axios.get("/api/configs");
+      const response = await fetch("/api/configs");
+      const data = await response.json();
       setConfigs(data || []);
     };
 
@@ -84,35 +83,32 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    socket.on("connect", () => {
-      console.log("Socket connected successfully", socket.id);
+    // Only create socket connection when this page loads
+    const newSocket = io(emailApiUrl, {
+      autoConnect: true,
+      reconnection: true,
     });
 
-    // Listen for progress updates
-    socket.on("progress", (data: ProgressData) => {
+    newSocket.on("connect", () => {
+      console.log("Socket connected successfully", newSocket.id);
+    });
+
+    newSocket.on("progress", (data) => {
       console.log("Progress event received:", data);
       setProgress(data);
     });
 
     return () => {
       console.log("Cleaning up socket connections");
-      socket.off("connect");
-      socket.off("connect_error");
-      socket.off("disconnect");
-      socket.off("progress");
+      newSocket.disconnect();
     };
   }, []);
 
   useEffect(() => {
-    console.log("hii");
     if (emailData.excelFile) {
       countemails();
     }
   }, [emailData.excelFile]);
-
-  useEffect(() => {
-    console.log(configs);
-  }, [configs]);
 
   const showSendEmailDialog = () => {
     // Your logic here
@@ -139,7 +135,11 @@ export default function App() {
     const { name, files } = e.target;
     if (files) {
       if (name === "excelFile") {
-        setEmailData((prev) => ({ ...prev, [name]: files[0] }));
+        if (files[0].size < 500000) {
+          setEmailData((prev) => ({ ...prev, [name]: files[0] }));
+        } else {
+          toast.error("Excel file size exceeds 500 KB.");
+        }
       } else if (name === "documents" || name === "posters") {
         setEmailData((prev) => ({
           ...prev,
@@ -152,7 +152,7 @@ export default function App() {
   // get the excel .xlsx file and count the emails in it or the rows
   const countemails = () => {
     if (!emailData.excelFile) {
-      console.error("No Excel file provided.");
+      toast.error("No Excel file provided.");
       return; // Exit if no file is present
     }
 
@@ -162,18 +162,22 @@ export default function App() {
       const workbook = XLSX.read(data, { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      const emailCount = jsonData
+        .slice(1) // Skip the header row ("email")
+        .filter((row) => row[0] && row[0].toString().trim() !== "").length; // Count non-empty, non-whitespace cells in first column
+
       setEmailData((prev) => ({
         ...prev,
-        emailCount: jsonData.length,
+        emailCount: emailCount,
       }));
     };
 
-    reader.readAsArrayBuffer(emailData.excelFile); // Read the file as an ArrayBuffer
+    reader.readAsArrayBuffer(emailData.excelFile);
   };
 
   // Removing attached document
   const removeAttachedDocument = (index: number) => {
-    console.log("removeAttachedDocument", index);
     setEmailData((prev) => ({
       ...prev,
       documents: prev.documents.filter((_, i) => i !== index),
@@ -196,9 +200,7 @@ export default function App() {
     setOpen(false);
     setEditorView(false);
 
-    const api_url = "http://127.0.0.1:5000/send-email"; // Flask endpoint
-
-    // console.log("selectedConfig : ", selectedConfig);
+    const api_url = `${emailApiUrl}/send-email`;
 
     if (!configs || !selectedConfig) {
       const errorMessage = !configs
@@ -206,6 +208,18 @@ export default function App() {
         : "No configuration selected. Please select a configuration.";
 
       toast.error(errorMessage);
+    }
+
+    const requiredFields = ["emailSubject", "excelFile"];
+    const missingFields = requiredFields.filter(
+      (field) => !emailData[field as keyof typeof emailData]
+    );
+
+    if (missingFields.length > 0) {
+      toast.error(
+        `Please fill in the required fields: ${missingFields.join(", ")}`
+      );
+      return;
     }
 
     const selectedConfigObj = configs.find(
@@ -217,7 +231,7 @@ export default function App() {
     }
 
     const dataToSend = new FormData();
-    console.log("selectedConfigObj", selectedConfigObj);
+    console.log("selected Config: ", selectedConfigObj);
     dataToSend.append("smtp_server", selectedConfigObj.smtp_server);
     dataToSend.append("port", selectedConfigObj.smtp_port.toString());
     dataToSend.append("sender_email", selectedConfigObj.smtp_email);
@@ -228,35 +242,18 @@ export default function App() {
     );
     dataToSend.append("subject_template", emailData.emailSubject);
     dataToSend.append("body_template", editor?.getHTML() || "");
-
     dataToSend.append("poster_url", emailData.posterUrl);
-    dataToSend.append("is_test", isTest.toString());
-
-    if (isTest) {
-      dataToSend.append("test_email", emailData.testEmail);
-    }
-
-    // Optionally append files if they exist
     if (emailData.excelFile) {
       dataToSend.append("excelFile", emailData.excelFile);
     }
-
-    // Append attachments
     emailData.documents.forEach((file) => {
       dataToSend.append("attachments", file);
     });
-
     // Append poster URL if provided
     if (emailData.posters.length > 0) {
       emailData.posters.forEach((file) => {
         dataToSend.append("posters", file);
       });
-    }
-
-    // Append test email information
-    dataToSend.append("is_test", isTest.toString());
-    if (isTest) {
-      dataToSend.append("test_email", emailData.testEmail);
     }
 
     setLogView(true);
@@ -350,10 +347,7 @@ export default function App() {
       setShouldSend(false); // Reset the trigger
     }
   }, [shouldSend, emailData]);
-  // Generating email preview
-  const generateEmailPreview = () => {
-    setPreviewHtml(editor?.getHTML() || "");
-  };
+
 
   // Exporting failed emails to Excel
   const exportFailedEmailsToExcel = () => {
@@ -445,10 +439,9 @@ export default function App() {
     if (e) {
       e.preventDefault();
     }
-    console.log("hi from submitTestEmailCampaign");
     setEditorView(false);
 
-    const api_url = "http://127.0.0.1:5000/send-test"; // Flask endpoint
+    const api_url = `${emailApiUrl}/send-test`; // Flask endpoint
 
     if (!configs || !selectedConfig) {
       const errorMessage = !configs
@@ -458,12 +451,24 @@ export default function App() {
       return; // Exit early if there's an error
     }
 
+    const requiredFields = ["emailSubject", "testEmail"];
+    const missingFields = requiredFields.filter(
+      (field) => !emailData[field as keyof typeof emailData]
+    );
+
+    if (missingFields.length > 0) {
+      toast.error(
+        `Please fill in the required fields: ${missingFields.join(", ")}`
+      );
+      return;
+    }
+
     const selectedConfigObj = configs.find(
       (config) => config._id === selectedConfig
     );
 
     const dataToSend = new FormData();
-    console.log("selectedConfigObj", selectedConfigObj);
+    console.log("selected Config : ", selectedConfigObj);
     if (!selectedConfigObj) {
       throw new Error("Selected configuration not found in user data.");
     }
@@ -478,14 +483,10 @@ export default function App() {
     dataToSend.append("subject_template", emailData.emailSubject);
     dataToSend.append("body_template", editor?.getHTML() || "");
     dataToSend.append("poster_url", emailData.posterUrl);
-    console.log("test email: ", emailData.testEmail);
     dataToSend.append("test_email", emailData.testEmail);
-
-    // Append attachments
     emailData.documents.forEach((file) => {
       dataToSend.append("attachments", file);
     });
-
     // Append poster URL if provided
     if (emailData.posters.length > 0) {
       emailData.posters.forEach((file) => {
@@ -520,7 +521,7 @@ export default function App() {
   };
 
   const testConnection = async () => {
-    const api_url = "http://127.0.0.1:5000/test-connection";
+    const api_url = `${emailApiUrl}/test-connection`;
     const response = await fetch(api_url, {
       method: "GET",
     });
@@ -559,7 +560,6 @@ export default function App() {
         configs={configs}
         selectedConfig={selectedConfig}
         setSelectedConfig={setSelectedConfig}
-        onPreview={generateEmailPreview}
         resetForm={resetForm}
         testConnection={testConnection}
       />

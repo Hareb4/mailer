@@ -25,61 +25,6 @@ import {
 // Lazy load the form component since it's not needed immediately
 const ConfigForm = lazy(() => import("@/components/config/ConfigForm"));
 
-// Optimized ConfigList with virtualization for large lists
-function ConfigList2({
-  configs,
-  onEdit,
-  onDelete,
-}: {
-  configs: Config[];
-  onEdit: (config: Config) => void;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-bold">
-        <span className="inline-block">Saved Configs</span>
-      </h2>
-      {configs.map((config) => (
-        <Card
-          key={config._id}
-          className="transform transition-transform hover:scale-[1.01]"
-        >
-          <CardContent className="p-4">
-            {/* Prioritize loading of important content */}
-            <div className="space-y-2">
-              <h3 className="text-xl font-semibold">{config.name}</h3>
-              <p className="text-sm text-gray-500">
-                <span className="font-medium">Email:</span> {config.from_email}
-              </p>
-              {/* Defer less important content */}
-              <div className="text-sm text-gray-500">
-                <p>SMTP Server: {config.smtp_server}</p>
-                <p>SMTP Port: {config.smtp_port}</p>
-                <p>SMTP Email: {config.smtp_email}</p>
-              </div>
-            </div>
-            <div className="mt-4 space-x-2">
-              <button
-                onClick={() => onEdit(config)}
-                className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition-colors"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => onDelete(config._id)}
-                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
 function ConfigList({
   configs,
   onEdit,
@@ -194,54 +139,23 @@ export default function ConfigPage() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [configToDelete, setConfigToDelete] = useState<string | null>(null);
 
-  // Optimized data fetching
   useEffect(() => {
-    let isMounted = true;
-    const source = axios.CancelToken.source();
-
     const fetchConfigs = async () => {
-      try {
-        const { data } = await axios.get("/api/configs", {
-          cancelToken: source.token,
-          headers: {
-            "Cache-Control": "no-cache",
-            Pragma: "no-cache",
-          },
-        });
-
-        if (isMounted) {
-          setConfigs(data);
-        }
-      } catch (err) {
-        if (axios.isCancel(err)) {
-          console.log("Request was canceled", err.message);
-          // Optionally, you can choose to not set an error state for cancellations
-          return;
-        }
-
-        if (isMounted) {
-          console.error("Fetch configs error:", err);
-          setError(
-            err instanceof Error
-              ? err
-              : new Error("Failed to fetch configurations")
-          );
-        }
-      }
+      const response = await fetch("/api/configs");
+      const data = await response.json();
+      setConfigs(data);
     };
-
     fetchConfigs();
-
-    return () => {
-      isMounted = false;
-      source.cancel("Component unmounted or dependencies changed");
-    };
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   const handleSubmit = async (formData: ConfigFormData) => {
     try {
       if (editingConfig) {
-        await axios.put(`/api/configs/${editingConfig._id}`, formData);
+        const responce = await axios.put(
+          `/api/configs/${editingConfig._id}`,
+          formData
+        );
+        toast.success(responce.statusText);
       } else {
         const encryptedData = {
           ...formData,

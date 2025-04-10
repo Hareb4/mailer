@@ -55,9 +55,6 @@ export async function POST(request: Request) {
 
 export async function GET(req: Request) {
   try {
-    // Connect to MongoDB
-    await Connection();
-
     // Get the user token from cookies (or adapt based on your auth system)
     const token = (await cookies()).get("token")?.value;
 

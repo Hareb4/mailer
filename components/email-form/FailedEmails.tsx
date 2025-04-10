@@ -61,10 +61,12 @@ export const FailedEmails = ({
         </tbody>
       </table>
       <div className="flex gap-2 mt-4">
-        <Button onClick={createExcelFile}>Download Failed Emails</Button>
-        <form onSubmit={resendEmails} hidden={!isThereFailedEmails}>
+        <Button type="button" onClick={createExcelFile}>
+          Download Failed Emails
+        </Button>
+        {/* <form onSubmit={resendEmails} hidden={!isThereFailedEmails}>
           <Button type="submit">ReSend Emails</Button>
-        </form>
+        </form> */}
       </div>
     </div>
   );

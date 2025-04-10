@@ -14,6 +14,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Paperclip, Image, FilePlus, Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
+import PreviewPage from "./preview-rows";
 
 interface EmailFormProps {
   emailData: EmailData;
@@ -27,7 +38,6 @@ interface EmailFormProps {
   editor: any;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
   onTestSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
-  onPreview: () => void;
   setSelectedConfig: (value: string) => void;
   resetForm: () => void;
   setLogView: (value: boolean) => void;
@@ -49,7 +59,6 @@ export const EmailForm = ({
   editor,
   onSubmit,
   onTestSubmit,
-  onPreview,
   resetForm,
   testConnection,
   showSendEmailDialog,
@@ -134,25 +143,54 @@ export const EmailForm = ({
               </span>
             </label>
             {emailData.excelFile ? (
-              <div className="mt-2 p-2  border rounded flex items-center justify-between">
-                <span className="truncate max-w-xs text-sm">
-                  {emailData.excelFile.name}
-                </span>
-                <Button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    removeExcelFile();
-                    if (excelFileInputRef.current) {
-                      excelFileInputRef.current.value = "";
-                    }
-                  }}
-                  variant="destructive"
-                  size={"sm"}
-                  className="ml-2 flex-shrink-0"
-                >
-                  Remove
-                </Button>
+              <div>
+                <div className="mt-2 p-2 border rounded flex items-center justify-between">
+                  <span className="truncate max-w-xs text-sm">
+                    {emailData.excelFile.name}
+                  </span>
+                  <Button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeExcelFile();
+                      if (excelFileInputRef.current) {
+                        excelFileInputRef.current.value = "";
+                      }
+                    }}
+                    variant="destructive"
+                    size={"sm"}
+                    className="ml-2 flex-shrink-0"
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="link"
+                      disabled={!emailData.excelFile}
+                    >
+                      View Emails
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
+                    <DialogHeader>
+                      <DialogTitle>Email List Preview</DialogTitle>
+                      <DialogDescription>
+                        Showing all emails from {emailData.excelFile?.name}
+                      </DialogDescription>
+                    </DialogHeader>
+                    {emailData.excelFile && (
+                      <PreviewPage excelFile={emailData.excelFile} />
+                    )}
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button variant="secondary">Close</Button>
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             ) : (
               <p className="text-xs text-gray-500">No file selected</p>
@@ -355,17 +393,6 @@ export const EmailForm = ({
             Send Test Email
           </Button>
           <div className="hidden">
-            <Button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                onPreview();
-              }}
-              variant="outline"
-              className="w-full"
-            >
-              Preview
-            </Button>
             <Button
               type="button"
               onClick={(e) => {
