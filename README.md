@@ -27,13 +27,13 @@ Mailer is a comprehensive email management application designed to streamline th
 
    ```bash
    git clone https://github.com/Hareb4/mailer.git
-   cd mailxl
+   cd mailer
    ```
 
 2. Install frontend dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 3. Set up environment variables:
@@ -43,7 +43,7 @@ Mailer is a comprehensive email management application designed to streamline th
 4. Run the React frontend on port 8080:
 
    ```bash
-   npm run dev -- -p 8080
+   pnpm dev -- --port 8080
    ```
 
 ### Backend Setup
